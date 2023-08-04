@@ -57,3 +57,11 @@ class TS_Grabber():
             assert not isnan(sals[i]), 'no data'
 
         return temps, sals
+
+# loop over all possible profiles and find 10 gravest eigenvectors
+for year in range(2017, 2024):
+    for month in range(1, 12):
+        if (year == 2023 and month > 6):
+            break
+        
+        # depth stacking?
