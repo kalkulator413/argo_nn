@@ -3,7 +3,7 @@ from argo_nn.TS_Parser import *
 import pickle
 
 def single_coord():
-    N = 180 + 48 + 6
+    N = 215
     L = 58
     Y_t = np.zeros((N, L))
     Y_s = np.zeros((N, L))

@@ -2,6 +2,7 @@ from GeneralUtilities.Data.Filepath.instance import get_data_folder as get_base_
 from netCDF4 import Dataset
 import numpy as np
 from math import isnan
+import pickle
 
 # find means
 sal_file = get_base_folder() + '/Raw/Argo/temp-sal/RG_ArgoClim_Salinity_2019.nc'
@@ -93,6 +94,12 @@ def get_eofs():
     print('\nsalinity matrix has dimensions', Y_s.shape)
     U_s, amp_s, var_s = get_decomp(Y_s)
 
+    with open('testing-notebooks/ut_full.pkl', 'wb') as f:
+        pickle.dump(U_t, f)
+
+    with open('testing-notebooks/us_full.pkl', 'wb') as f:
+        pickle.dump(U_s, f)
+
 def get_decomp(Y):
     U, s, Vh = np.linalg.svd(Y)
     amp = np.diag(s) @ Vh
@@ -101,9 +108,9 @@ def get_decomp(Y):
     print('matrix of EOFs has dimensions', U.shape)
     print('matrix of amplitudes has dimensions', amp.shape)
     print('vector of variances has dimensions', variances.shape)
-    # print('now printing variances')
-    # for v in variances:
-    #     print(v)
+    print('now printing variances')
+    for v in variances:
+        print(v)
 
     return U, amp, variances
 
