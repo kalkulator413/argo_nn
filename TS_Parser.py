@@ -62,37 +62,49 @@ class TS_Grabber():
         return temps, sals
 
 def get_eofs():
-    # N = ((2022 - 2004) * 12 + 6) * 30650 # 30650 is the total number of valid pairs (lat, lon) with unmasked data
-    N = 30650
+    N = 48160
     L = 58
-    temp_Y = np.zeros((N, L))
-    sal_Y = np.zeros((N, L))
+    Y_t = np.zeros((N, L))
+    Y_s = np.zeros((N, L))
 
     sum = 0
-    for year in [2004]:#range(2004, 2024):
-        for month in [1]:#range(1, 12):
+    for year in range(2004, 2024):
+        for month in range(1, 12):
             if (year == 2023 and month > 6):
                 break
             
             data = TS_Grabber(year, month)
 
-            for lat in data.lat:
-                for lon in data.lon:
+            for lat in data.lat[::12]:
+                for lon in data.lon[::12]:
                     try:
                         t, s = data.get_profiles(lat, lon)
                     except Exception as e:
                         continue
 
-                    temp_Y[sum] = t
-                    sal_Y[sum] = s
+                    Y_t[sum] = t
+                    Y_s[sum] = s
                     sum += 1
 
-    print(temp_Y.shape)
-    U_t, S_t, V_t = np.linalg.svd(temp_Y)
-    amp_t = S_t @ V_t.T
-    print(U_t.shape, amp_t.shape)
+    print('sum:', sum)
+    print('temperature matrix has dimensions', Y_t.shape)
+    U_t, amp_t, var_t = get_decomp(Y_t)
+    
+    print('\nsalinity matrix has dimensions', Y_s.shape)
+    U_s, amp_s, var_s = get_decomp(Y_s)
 
-    # U_s, S_s, V_s = np.linalg.svd(sal_Y)
-    # amp_s = U_s.T @ sal_Y
+def get_decomp(Y):
+    U, s, Vh = np.linalg.svd(Y)
+    amp = np.diag(s) @ Vh
+    variances = np.diag((np.diag(s) @ np.diag(s).T)) / 58
 
-get_eofs()
+    print('matrix of EOFs has dimensions', U.shape)
+    print('matrix of amplitudes has dimensions', amp.shape)
+    print('vector of variances has dimensions', variances.shape)
+    # print('now printing variances')
+    # for v in variances:
+    #     print(v)
+
+    return U, amp, variances
+
+# get_eofs()
