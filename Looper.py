@@ -5,32 +5,36 @@ from argo_nn.Grabber import *
 from argo_nn.TS_Parser import *
 from GeneralUtilities.Data.Filepath.instance import get_data_folder as get_base_folder
 from datetime import datetime, timedelta, timezone
+import pickle
 
 etopo = EtopoGrabber()
 argo_folder = os.path.join(get_base_folder(), 'Raw/Argo')
-radius = 0.5
-
-# TODO:
-# make etopo grabber faster by having a lookup table for all possible (lat, lon)
-# make aviso grabber faster by reading in all possible (year, month) combinations beforehand
+radius = 3
 
 class DataHolder:
-    def __init__(self, lat:float, lon:float, temp, sal, dlat:float, dlon:float, bathymetry_grid, ssh_grid, angle:float, magnitude:float):
-        self.lat = lat
-        self.lon = lon
+    def __init__(self, temp, sal, bathymetry_grid, ssh_grid, angle:float, magnitude:float):
         self.temp = temp
         self.sal = sal
-        self.dlat = dlat
-        self.dlon = dlon
         self.bathymetry_grid = bathymetry_grid
         self.ssh_grid = ssh_grid
+        self.angle = angle
+        self.magnitude = magnitude
 
-    def __str__(self):
-        return f'Resurfaced at ({self.lat}, {self.lon}) with salinities {self.sal} and temperatures {self.temp}'
+def preloop():
+    # read in EOFs for temperature and salinity data
+    # and store the first 10 of each
+    with open('eofs/ut_full.pkl', 'rb') as f:
+        eofs_t = pickle.load(f).T
 
+    with open('eofs/us_full.pkl', 'rb') as f:
+        eofs_s = pickle.load(f).T
+
+    return eofs_t[:10], eofs_s[:10]
+    # and any further optimizations ...
 
 def loop():
     list_of_data = np.array([])
+    eofs_t, eofs_s = preloop()
 
     for filename in os.listdir(argo_folder)[:1]:
         subfolder = os.path.join(argo_folder, filename)
@@ -50,18 +54,19 @@ def loop():
                 # filter flag 1 for position qc
                 if ds['POSITION_QC'][i] != b'1':
                     continue
-                # no real time data
+                # reject real time data
                 if ds['DATA_MODE'][i] == b'R':
                     continue
                 # filter flag 1 for juld qc
                 if ds['JULD_QC'][i] != b'1':
                     continue
 
-                # check if next resurface height good
+                # check if next resurface height and time good
                 if ds['POSITION_QC'][i+1] != b'1':
                     continue
+                if ds['JULD_QC'][i+1] != b'1':
+                    continue
 
-                # check if valid date and location for aviso
 
                 juld = ds['JULD'][:][i]
                 juld_next = ds['JULD'][:][i+1]
@@ -76,6 +81,7 @@ def loop():
                 try:
                     aviso_grid = AvisoGrabber(dt.year, dt.month, dt.day).get_grid(lat, lon, radius)
                     temp, sal = TS_Grabber(dt.year, dt.month).get_profiles(lat, lon)
+                    etopo_grid = etopo.get_grid(lat, lon, radius)
                 except Exception as e:
                     # print(e)
                     continue
@@ -98,8 +104,10 @@ def loop():
 
                 magnitude = np.sqrt(dlat**2 + dlon**2)
 
-                # not sure how to deal with temp or psal, setting both to 0
-                curr = DataHolder(lat, lon, temp, sal, dlat, dlon, aviso_grid, etopo.get_grid(lat, lon, radius), angle, magnitude)
+                proj_t = [np.dot(x, temp) for x in eofs_t]
+                proj_s = [np.dot(x, sal) for x in eofs_s]
+
+                curr = DataHolder(proj_t, proj_s, aviso_grid, etopo_grid, angle, magnitude)
                 list_of_data = np.append(list_of_data, curr)
 
     return list_of_data

@@ -3,20 +3,15 @@ from netCDF4 import Dataset
 import numpy as np
 import pickle
 
-# find means
 sal_file = get_base_folder() + '/Raw/Argo/temp-sal/RG_ArgoClim_Salinity_2019.nc'
 temp_file = get_base_folder() + '/Raw/Argo/temp-sal/RG_ArgoClim_Temperature_2019.nc'
 sal_ds = Dataset(sal_file)
-mean_sal = [sal_ds['ARGO_SALINITY_MEAN'][depth] for depth in range(25, 58)]
 temp_ds = Dataset(temp_file)
-mean_temp = [temp_ds['ARGO_TEMPERATURE_MEAN'][depth] for depth in range(25, 58)]
 
 class TS_Grabber():
     def __init__(self, year:int, month:int):
         assert month > 0 and month <= 12, 'month must be between 1 and 12'
 
-        self.month = month
-        self.year = year
         if year <= 2018:
             # calculate how many months back it is from dec 2018
             month_diff = (year*12 + month) - (2018*12 + 12) - 1
@@ -100,16 +95,16 @@ def get_eofs():
     print('\nsalinity matrix has dimensions', Y_s.shape)
     U_s, amp_s, var_s = get_decomp(Y_s)
 
-    with open('testing-notebooks/ut_full.pkl', 'wb') as f:
+    with open('eofs/ut_full.pkl', 'wb') as f:
         pickle.dump(U_t, f)
 
-    with open('testing-notebooks/ampt_full.pkl', 'wb') as f:
+    with open('eofs/ampt_full.pkl', 'wb') as f:
         pickle.dump(amp_t, f)
 
-    with open('testing-notebooks/us_full.pkl', 'wb') as f:
+    with open('eofs/us_full.pkl', 'wb') as f:
         pickle.dump(U_s, f)
 
-    with open('testing-notebooks/amps_full.pkl', 'wb') as f:
+    with open('eofs/amps_full.pkl', 'wb') as f:
         pickle.dump(amp_s, f)
 
 def get_decomp(Y):
@@ -127,5 +122,3 @@ def get_decomp(Y):
         print(v)
 
     return U, amp, variances
-
-# get_eofs()
