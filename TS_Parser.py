@@ -7,6 +7,9 @@ sal_file = get_base_folder() + '/Raw/Argo/temp-sal/RG_ArgoClim_Salinity_2019.nc'
 temp_file = get_base_folder() + '/Raw/Argo/temp-sal/RG_ArgoClim_Temperature_2019.nc'
 sal_ds = Dataset(sal_file)
 temp_ds = Dataset(temp_file)
+pressure_range = range(25, 56)
+mean_sal = [sal_ds['ARGO_SALINITY_MEAN'][depth] for depth in pressure_range]
+mean_temp = [temp_ds['ARGO_TEMPERATURE_MEAN'][depth] for depth in pressure_range]
 
 class TS_Grabber():
     def __init__(self, year:int, month:int):
@@ -16,8 +19,8 @@ class TS_Grabber():
             # calculate how many months back it is from dec 2018
             month_diff = (year*12 + month) - (2018*12 + 12) - 1
 
-            self.temp = [temp_ds['ARGO_TEMPERATURE_ANOMALY'][month_diff][depth] for depth in range(25, 58)]
-            self.sal = [sal_ds['ARGO_SALINITY_ANOMALY'][month_diff][depth] for depth in range(25, 58)]
+            self.temp = [temp_ds['ARGO_TEMPERATURE_ANOMALY'][month_diff][depth] for depth in pressure_range]
+            self.sal = [sal_ds['ARGO_SALINITY_ANOMALY'][month_diff][depth] for depth in pressure_range]
         else:
             assert year <= 2023, 'provided year is in the future'
             if year == 2023:
@@ -30,8 +33,8 @@ class TS_Grabber():
                 path += f'RG_ArgoClim_{year}0{month}_2019.nc'
             ds = Dataset(path)
 
-            self.temp = [ds['ARGO_TEMPERATURE_ANOMALY'][0][depth] for depth in range(25, 58)]
-            self.sal = [ds['ARGO_SALINITY_ANOMALY'][0][depth] for depth in range(25, 58)]
+            self.temp = [ds['ARGO_TEMPERATURE_ANOMALY'][0][depth] for depth in pressure_range]
+            self.sal = [ds['ARGO_SALINITY_ANOMALY'][0][depth] for depth in pressure_range]
 
         self.lat = temp_ds['LATITUDE'][:]
         self.lon = temp_ds['LONGITUDE'][:]
@@ -45,25 +48,26 @@ class TS_Grabber():
         lat_idx = round(lat + 64.5)
         lon_idx = round(lon - 20.5)
 
-        temps = np.zeros(33)
-        sals = np.zeros(33)
+        temps = np.zeros(len(pressure_range), dtype='float32')
+        sals = np.zeros(len(pressure_range), dtype='float32')
         for i in range(len(self.temp)):
 
             ta = self.temp[i].data[lat_idx][lon_idx]
             sa = self.sal[i].data[lat_idx][lon_idx]
+            tm = mean_temp[i].data[lat_idx][lon_idx]
+            sm = mean_sal[i].data[lat_idx][lon_idx]
 
-            assert ta != -999 and sa != -999, 'used masked data'
-            temps[i] = ta
-            sals[i] = sa
+            assert ta != -999 and sa != -999 and tm != -999 and sm != -999, 'used masked data'
+            temps[i] = ta + tm
+            sals[i] = sa + sm
 
         return temps, sals
 
 def get_eofs():
     time_len = 234
-    N = 224 * time_len
-    L = 33
-    Y_t = np.zeros((N, L))
-    Y_s = np.zeros((N, L))
+    N = 397 * time_len
+    L = len(pressure_range) * 2
+    Y = np.zeros((N, L), dtype='float32')
 
     sum_time = 0
     for year in range(2004, 2024):
@@ -74,38 +78,38 @@ def get_eofs():
             data = TS_Grabber(year, month)
 
             sum_coord = 0
-            for lat in data.lat[::12]:
-                for lon in data.lon[::12]:
+            for lat in data.lat[::9]:
+                for lon in data.lon[::9]:
                     try:
                         t, s = data.get_profiles(lat, lon)
                     except Exception as e:
                         continue
 
-                    Y_t[sum_coord * time_len + sum_time] = t
-                    Y_s[sum_coord * time_len + sum_time] = s
+                    Y[sum_coord * time_len + sum_time] = np.append(t, s)
                     sum_coord += 1
 
             sum_time += 1
 
-    Y_t = Y_t.T
-    Y_s = Y_s.T
-    print('temperature matrix has dimensions', Y_t.shape)
-    U_t, amp_t, var_t = get_decomp(Y_t)
-    
-    print('\nsalinity matrix has dimensions', Y_s.shape)
-    U_s, amp_s, var_s = get_decomp(Y_s)
+    Y = Y.T
+    means = np.zeros(2 * len(pressure_range))
+    for i, y in enumerate(Y):
+        means[i] = np.mean(y)
+        Y[i] = y - means[i]
 
-    with open('eofs/ut_full.pkl', 'wb') as f:
-        pickle.dump(U_t, f)
+    with open('eofs/means.pkl', 'wb') as f:
+        pickle.dump(means, f)
 
-    with open('eofs/ampt_full.pkl', 'wb') as f:
-        pickle.dump(amp_t, f)
+    print('Y has dimensions', Y.shape)
+    U, amp, var = get_decomp(Y)
 
-    with open('eofs/us_full.pkl', 'wb') as f:
-        pickle.dump(U_s, f)
+    with open('eofs/u.pkl', 'wb') as f:
+        pickle.dump(U, f)
 
-    with open('eofs/amps_full.pkl', 'wb') as f:
-        pickle.dump(amp_s, f)
+    with open('eofs/amp.pkl', 'wb') as f:
+        pickle.dump(amp, f)
+
+    with open('eofs/var.pkl', 'wb') as f:
+        pickle.dump(var, f)
 
 def get_decomp(Y):
     U, s, Vh = np.linalg.svd(Y)
@@ -117,8 +121,8 @@ def get_decomp(Y):
     print('matrix of EOFs has dimensions', U.shape)
     print('matrix of amplitudes has dimensions', amp.shape)
     print('vector of variances has dimensions', variances.shape)
-    print('now printing variances')
-    for v in variances:
-        print(v)
 
     return U, amp, variances
+
+if __name__ == '__main__':
+    get_eofs()
