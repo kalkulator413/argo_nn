@@ -10,11 +10,11 @@ import pickle
 etopo = EtopoGrabber()
 argo_folder = os.path.join(get_base_folder(), 'Raw/Argo')
 radius = 3
+pres = sal_ds['PRESSURE'][pressure_range]
 
 class DataHolder:
-    def __init__(self, temp, sal, bathymetry_grid, ssh_grid, angle:float, magnitude:float):
-        self.temp = temp
-        self.sal = sal
+    def __init__(self, temp_sal, bathymetry_grid, ssh_grid, angle:float, magnitude:float):
+        self.temp_sal = temp_sal
         self.bathymetry_grid = bathymetry_grid
         self.ssh_grid = ssh_grid
         self.angle = angle
@@ -23,18 +23,40 @@ class DataHolder:
 def preloop():
     # read in EOFs for temperature and salinity data
     # and store the first 10 of each
-    with open('eofs/ut_full.pkl', 'rb') as f:
-        eofs_t = pickle.load(f).T
+    with open('eofs/u.pkl', 'rb') as f:
+        eofs = pickle.load(f).T
 
-    with open('eofs/us_full.pkl', 'rb') as f:
-        eofs_s = pickle.load(f).T
+    return eofs[:6]
+    # add any further optimizations ...
 
-    return eofs_t[:10], eofs_s[:10]
-    # and any further optimizations ...
+def interpolate(argo_depths, rg_depths, argo_readings, pres_qc):
+    result = np.zeros(len(rg_depths))
+    prev = 0
+    for i, depth in enumerate(rg_depths):
+
+        while prev < len(argo_depths) - 1 and not (argo_depths[prev] < depth and argo_depths[prev+1] >= depth):
+            if (not type(argo_depths.mask) == np.bool_) and argo_depths.mask[prev+1]:
+                print(f'couldnt exceed depth {depth}')
+                return None
+            prev += 1
+
+        if (pres_qc[prev] != b'1') or (pres_qc[prev+1] != b'1'):
+                print(f'failed quality control')
+                return None
+        x1 = argo_depths[prev]
+        x2 = argo_depths[prev+1]
+        y1 = argo_readings[prev]
+        y2 = argo_readings[prev+1]
+
+        slope = (y2 - y1) / (x2 - x1)
+        interpolated_val = slope * (depth - x1) + y1
+        result[i] = interpolated_val
+
+    return result
 
 def loop():
     list_of_data = np.array([])
-    eofs_t, eofs_s = preloop()
+    eofs = preloop()
 
     for filename in os.listdir(argo_folder)[:1]:
         subfolder = os.path.join(argo_folder, filename)
@@ -67,10 +89,15 @@ def loop():
                 if ds['JULD_QC'][i+1] != b'1':
                     continue
 
-
                 juld = ds['JULD'][:][i]
                 juld_next = ds['JULD'][:][i+1]
                 if (juld_next - juld) < 9 or (juld_next - juld) > 11:
+                    continue
+                
+                float_pres = ds['PRES'][i]
+                temp = interpolate(float_pres, pres, ds['TEMP'][i], ds['PRES_QC'][i])
+                sal = interpolate(float_pres, pres, ds['PSAL'][i], ds['PRES_QC'][i])
+                if sal is None or temp is None:
                     continue
 
                 dt = datetime(1950, 1, 1, tzinfo=timezone.utc) + timedelta(juld)
@@ -80,7 +107,6 @@ def loop():
 
                 try:
                     aviso_grid = AvisoGrabber(dt.year, dt.month, dt.day).get_grid(lat, lon, radius)
-                    temp, sal = TS_Grabber(dt.year, dt.month).get_profiles(lat, lon)
                     etopo_grid = etopo.get_grid(lat, lon, radius)
                 except Exception as e:
                     # print(e)
@@ -104,10 +130,10 @@ def loop():
 
                 magnitude = np.sqrt(dlat**2 + dlon**2)
 
-                proj_t = [np.dot(x, temp) for x in eofs_t]
-                proj_s = [np.dot(x, sal) for x in eofs_s]
+                ts = np.append(temp, sal)
+                proj_ts = [np.dot(x, ts) for x in eofs]
 
-                curr = DataHolder(proj_t, proj_s, aviso_grid, etopo_grid, angle, magnitude)
+                curr = DataHolder(proj_ts, aviso_grid, etopo_grid, angle, magnitude)
                 list_of_data = np.append(list_of_data, curr)
 
     return list_of_data
