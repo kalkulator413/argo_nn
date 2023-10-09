@@ -26,33 +26,8 @@ def preloop():
     with open('eofs/u.pkl', 'rb') as f:
         eofs = pickle.load(f).T
 
-    return eofs[:6]
+    return eofs[:8]
     # add any further optimizations ...
-
-def interpolate(argo_depths, rg_depths, argo_readings, pres_qc):
-    result = np.zeros(len(rg_depths))
-    prev = 0
-    for i, depth in enumerate(rg_depths):
-
-        while prev < len(argo_depths) - 1 and not (argo_depths[prev] < depth and argo_depths[prev+1] >= depth):
-            if (not type(argo_depths.mask) == np.bool_) and argo_depths.mask[prev+1]:
-                print(f'couldnt exceed depth {depth}')
-                return None
-            prev += 1
-
-        if (pres_qc[prev] != b'1') or (pres_qc[prev+1] != b'1'):
-                print(f'failed quality control')
-                return None
-        x1 = argo_depths[prev]
-        x2 = argo_depths[prev+1]
-        y1 = argo_readings[prev]
-        y2 = argo_readings[prev+1]
-
-        slope = (y2 - y1) / (x2 - x1)
-        interpolated_val = slope * (depth - x1) + y1
-        result[i] = interpolated_val
-
-    return result
 
 def loop():
     list_of_data = np.array([])
