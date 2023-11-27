@@ -11,29 +11,23 @@ etopo = EtopoGrabber()
 argo_folder = os.path.join(get_base_folder(), 'Raw/Argo')
 radius = 3
 pres = sal_ds['PRESSURE'][pressure_range]
-
-class DataHolder:
-    def __init__(self, temp_sal, bathymetry_grid, ssh_grid, angle:float, magnitude:float):
-        self.temp_sal = temp_sal
-        self.bathymetry_grid = bathymetry_grid
-        self.ssh_grid = ssh_grid
-        self.angle = angle
-        self.magnitude = magnitude
+num_eofs = 8
 
 def preloop():
-    # read in EOFs for temperature and salinity data
-    # and store the first 10 of each
     with open('eofs/u.pkl', 'rb') as f:
         eofs = pickle.load(f).T
 
-    return eofs[:8]
+    with open('eofs/means.pkl', 'rb') as f:
+        means = pickle.load(f)
+
+    return eofs[:num_eofs], means
     # add any further optimizations ...
 
 def loop():
     list_of_data = np.array([])
-    eofs = preloop()
+    eofs, means = preloop()
 
-    for filename in os.listdir(argo_folder)[:1]:
+    for filename in os.listdir(argo_folder):
         subfolder = os.path.join(argo_folder, filename)
         print('Currently traversing', filename)
 
@@ -70,10 +64,16 @@ def loop():
                     continue
                 
                 float_pres = ds['PRES'][i]
-                temp = interpolate(float_pres, pres, ds['TEMP'][i], ds['PRES_QC'][i])
-                sal = interpolate(float_pres, pres, ds['PSAL'][i], ds['PRES_QC'][i])
-                if sal is None or temp is None:
+                float_pres_qc = ds['PRES_QC'][i]
+
+                t = interpolate(float_pres, pres, ds['TEMP'][i], float_pres_qc, ds['TEMP_QC'][i])
+                s = interpolate(float_pres, pres, ds['PSAL'][i], float_pres_qc, ds['PSAL_QC'][i])
+
+                if t is None or s is None:
                     continue
+                
+                concat = np.append(t / np.sqrt(tempvar), s / np.sqrt(salvar)) - means
+                ts = np.array([np.dot(concat, eofs[i]) for i in range(num_eofs)])
 
                 dt = datetime(1950, 1, 1, tzinfo=timezone.utc) + timedelta(juld)
                 
@@ -94,6 +94,7 @@ def loop():
                 if dlon > 100:
                     continue
 
+                # how are we planning to fix the angle?
                 angle = np.arctan(dlat / dlon)
 
                 # quadrant 2 fix
@@ -105,13 +106,19 @@ def loop():
 
                 magnitude = np.sqrt(dlat**2 + dlon**2)
 
-                ts = np.append(temp, sal)
-                proj_ts = [np.dot(x, ts) for x in eofs]
-
-                curr = DataHolder(proj_ts, aviso_grid, etopo_grid, angle, magnitude)
+                ssh_slope = 0
+                ssh_dir = 0
+                bath_slope = 0
+                bath_dir = 0
+                roughness = 0
+                curr = np.append(ts, np.array([ssh_slope, ssh_dir, bath_slope, bath_dir, roughness, angle, magnitude]))
                 list_of_data = np.append(list_of_data, curr)
 
+    list_of_data = np.reshape(list_of_data, (-1, num_eofs + 5 + 2))
     return list_of_data
 
-lst = loop()
-print(f'found {len(lst)} unique data points')
+if __name__ == '__main__':
+    lst = loop()
+    print(f'found {len(lst)} unique data points')
+    np.savetxt('out.csv', lst, delimiter=',', header='ts1,ts2,ts3,ts4,ts5,ts6,ts7,ts8,'
+               + 'ssh_slope,ssh_dir,bath_slope,bath_dir,roughness,angle,magnitude', comments='')
