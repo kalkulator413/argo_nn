@@ -24,6 +24,8 @@ class SlopeCalcDepth(ETopo1Depth):
 			ydist = 2
 		return self.regional_subsample(point.longitude+xdist,point.longitude-xdist,point.latitude+ydist,point.latitude-ydist)
 
+
+# TODO: check for NaNs
 class AvisoDepth(DepthBase):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -63,6 +65,8 @@ class SlopeCalcSSH(AvisoDepth):
 		if ydist >2:
 			ydist = 2
 		return self.regional_subsample(point.longitude+xdist,point.longitude-xdist,point.latitude+ydist,point.latitude-ydist)
+
+# TODO: scale coviariance matrices by Rossby deformation radius
 
 def get_opt_params(subsample_depth,point):
 

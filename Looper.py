@@ -32,8 +32,8 @@ def loop():
         print('Currently traversing', filename)
 
         # for the sake of testing, only go through 1 file in each subfolder
-        for f in os.listdir(subfolder)[:1]:
-        # for f in os.listdir(subfolder):
+        # for f in os.listdir(subfolder)[:1]:
+        for f in os.listdir(subfolder):
             print('Looking at float', f)
 
             prof_file = os.path.join(subfolder, f, f'{f}_prof.nc')
