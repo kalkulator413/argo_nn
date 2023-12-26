@@ -27,12 +27,13 @@ def loop():
     list_of_data = np.array([])
     eofs, means = preloop()
 
-    for filename in os.listdir(argo_folder):
+    for fnum, filename in enumerate(os.listdir(argo_folder)):
         subfolder = os.path.join(argo_folder, filename)
         print('Currently traversing', filename)
 
         # for the sake of testing, only go through 1 file in each subfolder
         for f in os.listdir(subfolder)[:1]:
+        # for f in os.listdir(subfolder):
             print('Looking at float', f)
 
             prof_file = os.path.join(subfolder, f, f'{f}_prof.nc')
@@ -81,44 +82,34 @@ def loop():
                 lat = ds['LATITUDE'][:][i]
 
                 try:
-                    aviso_grid = AvisoGrabber(dt.year, dt.month, dt.day).get_grid(lat, lon, radius)
-                    etopo_grid = etopo.get_grid(lat, lon, radius)
+                    # aviso_grid = AvisoGrabber(dt.year, dt.month, dt.day).get_grid(lat, lon, radius)
+                    # etopo_grid = etopo.get_grid(lat, lon, radius)
+                    pass
                 except Exception as e:
                     # print(e)
                     continue
 
-                dlon = ds['LONGITUDE'][:][i+1] - lon
-                dlat = ds['LATITUDE'][:][i+1] - lat
-
                 # longitude rollover
-                if dlon > 100:
+                if abs(ds['LONGITUDE'][:][i+1] - lon) > 100:
                     continue
-
-                # how are we planning to fix the angle?
-                angle = np.arctan(dlat / dlon)
-
-                # quadrant 2 fix
-                if (dlat >= 0 and dlon < 0):
-                    angle += np.pi
-                # quadrant 3 fix
-                if (dlat < 0 and dlon < 0):
-                    angle -= np.pi
-
-                magnitude = np.sqrt(dlat**2 + dlon**2)
 
                 ssh_slope = 0
                 ssh_dir = 0
                 bath_slope = 0
                 bath_dir = 0
                 roughness = 0
-                curr = np.append(ts, np.array([ssh_slope, ssh_dir, bath_slope, bath_dir, roughness, angle, magnitude]))
+                curr = np.append(ts, np.array([ssh_slope, ssh_dir, bath_slope, bath_dir, roughness]))
+                curr = np.append([fnum,int(f),i,dt.year,dt.month,dt.day,lat,lon,ds['LATITUDE'][:][i+1], ds['LONGITUDE'][:][i+1]], curr)
+
                 list_of_data = np.append(list_of_data, curr)
 
-    list_of_data = np.reshape(list_of_data, (-1, num_eofs + 5 + 2))
+    list_of_data = np.reshape(list_of_data, (-1, num_eofs + 5 + 10))
+    list_of_data[:,[0,1]] = list_of_data[:,[0,1]].astype(int)
     return list_of_data
 
 if __name__ == '__main__':
     lst = loop()
     print(f'found {len(lst)} unique data points')
-    np.savetxt('out.csv', lst, delimiter=',', header='ts1,ts2,ts3,ts4,ts5,ts6,ts7,ts8,'
-               + 'ssh_slope,ssh_dir,bath_slope,bath_dir,roughness,angle,magnitude', comments='')
+    np.savetxt('EOF.csv', lst, delimiter=',', header='folderidx,float,profileidx,year,month,day,'
+               +'lat,lon,nlat,nlon,ts1,ts2,ts3,ts4,ts5,ts6,ts7,ts8,'
+               + 'ssh_slope,ssh_dir,bath_slope,bath_dir,roughness', comments='')
