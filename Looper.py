@@ -34,7 +34,7 @@ def loop():
         # for the sake of testing, only go through 1 file in each subfolder
         # for f in os.listdir(subfolder)[:1]:
         for f in os.listdir(subfolder):
-            print('Looking at float', f)
+            # print('Looking at float', f)
 
             prof_file = os.path.join(subfolder, f, f'{f}_prof.nc')
             if not os.path.isfile(prof_file):
@@ -64,6 +64,8 @@ def loop():
                 if (juld_next - juld) < 9 or (juld_next - juld) > 11:
                     continue
                 
+                if 'PRES' not in ds.variables or 'PRES_QC' not in ds.variables:
+                    continue
                 float_pres = ds['PRES'][i]
                 float_pres_qc = ds['PRES_QC'][i]
 
