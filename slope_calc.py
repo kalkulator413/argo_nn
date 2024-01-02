@@ -14,7 +14,7 @@ class SlopeCalcDepth(EtopoGrabber):
 
 	def rossby_def_extent(self,point): #uses baroclinic deformation radius 
 		dist = self.rossby.return_rossby_def(point)
-		ydist = dist/degree_dist
+		ydist = dist
 		xdist = dist/(np.cos(np.deg2rad(point.latitude)))
 		if xdist > 2:
 			xdist = 2
@@ -29,17 +29,17 @@ class SlopeCalcSSH(AvisoGrabber):
 
 	def rossby_def_extent(self,point): #uses baroclinic deformation radius 
 		dist = self.rossby.return_rossby_def(point)
-		ydist = dist/degree_dist
+		ydist = dist
 		xdist = dist/(np.cos(np.deg2rad(point.latitude)))
 		if xdist > 2:
 			xdist = 2
 		if ydist >2:
 			ydist = 2
-		return self.get_rect(point.latitude, point.longitude, lat_radius=ydist, lon_radius=xdist)
+		return self.get_rect(lat=point.latitude, lon=point.longitude, lat_radius=ydist, lon_radius=xdist)
 
 # TODO: scale coviariance matrices by Rossby deformation radius
 
-def get_opt_params(subsample_depth,point):
+def get_opt_params(subsample_depth):
 
 	x,y = np.meshgrid(subsample_depth.lonlist-np.mean(subsample_depth.lonlist),subsample_depth.latlist-np.mean(subsample_depth.latlist))
 	z = subsample_depth.grid[len(subsample_depth.latlist) // 2][len(subsample_depth.lonlist) // 2]
@@ -60,13 +60,13 @@ if __name__ == '__main__':
 	# world_depth = SlopeCalcDepth()
 	point = geopy.Point(29,142)
 	subsample_depth = world_depth.rossby_def_extent(point) #radius of this should scale with rossby deformation radius
-	get_opt_params(subsample_depth,point)
+	get_opt_params(subsample_depth)
 
 	point = geopy.Point(31,159)
 	subsample_depth = world_depth.rossby_def_extent(point) #radius of this should scale with rossby deformation radius
-	get_opt_params(subsample_depth,point)
+	get_opt_params(subsample_depth)
 
-	point = geopy.Point(53,-163)
+	point = geopy.Point(52,-163)
 	subsample_depth = world_depth.rossby_def_extent(point) #radius of this should scale with rossby deformation radius
-	get_opt_params(subsample_depth,point)
+	get_opt_params(subsample_depth)
 

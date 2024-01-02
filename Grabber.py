@@ -28,9 +28,9 @@ class Grabber():
 		### exclude coastal areas (Aviso)
 		assert not result.mask.any(), 'tried to grab ssh over land'
 
-		latlist = np.flip(self.lat[lat_idx - lat_dist:lat_idx + lat_dist + 1], 0)
+		latlist = self.lat[lat_idx - lat_dist:lat_idx + lat_dist + 1]
 		lonlist = self.lon[lon_idx - lon_dist:lon_idx + lon_dist + 1]
-		return GridHolder(latlist, lonlist, np.flip(result, 0).data)
+		return GridHolder(latlist, lonlist, (result).data)
 
 class EtopoGrabber(Grabber):
 	def __init__(self):
