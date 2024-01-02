@@ -1,14 +1,11 @@
 # inspired from gaussian fit routine found here (https://stackoverflow.com/questions/21566379/fitting-a-2d-gaussian-function-using-scipy-optimize-curve-fit-valueerror-and-m)
 
-import scipy.optimize as opt
 import numpy as np
-from GeneralUtilities.Compute.Depth.depth_utilities import *
-from GeneralUtilities.Compute.constants import calculate_barotropic_rossby_def_rad
 from GeneralUtilities.Compute.constants import degree_dist
 import geopy
 import matplotlib.pyplot as plt
 from argo_nn.Rossby import RossbyBase
-from Grabber import *
+from argo_nn.Grabber import *
 
 class SlopeCalcDepth(EtopoGrabber):
 	def __init__(self, *args, **kwargs):
