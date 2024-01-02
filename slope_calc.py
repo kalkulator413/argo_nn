@@ -5,6 +5,7 @@ from GeneralUtilities.Compute.constants import degree_dist
 import geopy
 import matplotlib.pyplot as plt
 from argo_nn.Rossby import RossbyBase
+from argo_nn.Grabber import *
 
 # TODO: scale coviariance matrices by Rossby deformation radius
 
@@ -28,8 +29,8 @@ def get_opt_params(subsample_depth, name):
 	# plt.savefig(name)
 
 if __name__ == '__main__':
-	# world_depth = AvisoGrabber(2017, 11, 8)
-	world_depth = EtopoGrabber()
+	world_depth = AvisoGrabber(2017, 11, 8)
+	# world_depth = EtopoGrabber()
 	rossby = RossbyBase()
 
 	point = geopy.Point(29,142)
