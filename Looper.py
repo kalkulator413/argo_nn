@@ -66,6 +66,11 @@ def loop():
                 
                 if 'PRES' not in ds.variables or 'PRES_QC' not in ds.variables:
                     continue
+                if 'PSAL' not in ds.variables or 'PSAL_QC' not in ds.variables:
+                            continue
+                if 'TEMP' not in ds.variables or 'TEMP_QC' not in ds.variables:
+                            continue
+
                 float_pres = ds['PRES'][i]
                 float_pres_qc = ds['PRES_QC'][i]
 
@@ -112,6 +117,6 @@ def loop():
 if __name__ == '__main__':
     lst = loop()
     print(f'found {len(lst)} unique data points')
-    np.savetxt('EOF.csv', lst, delimiter=',', header='folderidx,float,profileidx,year,month,day,'
+    np.savetxt('out.csv', lst, delimiter=',', header='folderidx,float,profileidx,year,month,day,'
                +'lat,lon,nlat,nlon,ts1,ts2,ts3,ts4,ts5,ts6,ts7,ts8,'
                + 'ssh_slope,ssh_dir,bath_slope,bath_dir,roughness', comments='')

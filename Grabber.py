@@ -8,7 +8,7 @@ class Grabber():
 
 		### exclude edge cases near +- 90, +- 180
 		assert lat - radius > -90 and lat + radius < 90, 'latitude out of bounds'
-		assert lon - radius > -180 and lat + radius < 180, 'longtitude out of bounds'
+		assert lon - radius > -180 and lon + radius < 180, 'longtitude out of bounds'
 
 		dist = round(radius / self.granularity)
 		lat_idx = round((lat + 90 - self.offset) / self.granularity)
@@ -25,6 +25,28 @@ class Grabber():
 				ctr += 1
 		
 		return result.reshape((dist * 2 + 1, dist * 2 + 1))
+
+	def get_rect(self, lat, lon, lat_radius, lon_radius):
+		### exclude edge cases near +- 90, +- 180
+		assert lat - lat_radius > -90 and lat + lat_radius < 90, 'latitude out of bounds'
+		assert lon - lon_radius > -180 and lon + lon_radius < 180, 'longtitude out of bounds'
+
+		lon_dist = round(lon_radius / self.granularity)
+		lat_dist = round(lat_radius / self.granularity)
+		lat_idx = round((lat + 90 - self.offset) / self.granularity)
+		lon_idx = round((lon + 180 - self.offset) / self.granularity)
+		
+		result = np.zeros( (lon_dist * 2 + 1) * (lat_dist * 2 + 1))
+		ctr = 0
+		for lt in range(lat_idx - lat_dist, lat_idx + lat_dist + 1):
+			for ln in range(lon_idx - lon_dist, lon_idx + lon_dist + 1):
+				result[ctr] = self.z[lt][ln]
+				### exclude coastal areas (Aviso)
+				assert not isnan(result[ctr]), 'tried to grab ssh over land'
+
+				ctr += 1
+		
+		return result.reshape((lat_dist * 2 + 1, lon_dist * 2 + 1))
 
 class EtopoGrabber(Grabber):
 	def __init__(self):
