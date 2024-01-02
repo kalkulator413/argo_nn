@@ -1,7 +1,6 @@
 from GeneralUtilities.Data.Filepath.instance import get_data_folder as get_base_folder
 from netCDF4 import Dataset
 import numpy as np
-from math import isnan
 
 class GridHolder():
 	def __init__(self, latlist, lonlist, grid):
@@ -38,7 +37,7 @@ class EtopoGrabber(Grabber):
 		nc_fid_coord = Dataset(get_base_folder()+'/Raw/ETopo1/ETOPO1_Bed_g_gmt4.grd')
 		self.lon = nc_fid_coord['x'][:-1].data
 		self.lat = nc_fid_coord['y'][:-1].data
-		self.z = nc_fid_z_data['z'][:].reshape(len(self.lat),len(self.lon))
+		self.z = np.flip(nc_fid_z_data['z'][:].reshape(len(self.lat),len(self.lon)), axis=0)
 		self.granularity = 0.01666666666666
 		self.offset = 0
 

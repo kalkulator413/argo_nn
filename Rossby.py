@@ -3,7 +3,6 @@ import numpy as np
 from GeneralUtilities.Compute.list import LatList,LonList
 from GeneralUtilities.Compute.constants import degree_dist
 from GeneralUtilities.Data.Filepath.instance import get_data_folder as get_base_folder
-import geopy
 
 class RossbyBase(object):
 	def __init__(self):
@@ -32,4 +31,14 @@ class RossbyBase(object):
 		closest_lat = self.lats.find_nearest(point.latitude)
 		closest_lon = self.lons.find_nearest(point.longitude)
 		return self.rossby_dict[(closest_lat,closest_lon)]
+	
+	def rossby_def_extent(self,point,grabber): #uses baroclinic deformation radius 
+		dist = self.return_rossby_def(point)
+		ydist = dist
+		xdist = dist/(np.cos(np.deg2rad(point.latitude)))
+		if xdist > 2:
+			xdist = 2
+		if ydist >2:
+			ydist = 2
+		return grabber.get_rect(lat=point.latitude, lon=point.longitude, lat_radius=ydist, lon_radius=xdist)
 
