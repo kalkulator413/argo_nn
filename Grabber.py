@@ -26,11 +26,11 @@ class Grabber():
 		
 		result = self.z[lat_idx - lat_dist:lat_idx + lat_dist + 1, lon_idx - lon_dist:lon_idx + lon_dist + 1]
 		### exclude coastal areas (Aviso)
-		assert not np.isnan(result).any(), 'tried to grab ssh over land'
+		assert not result.mask.any(), 'tried to grab ssh over land'
 
-		latlist = self.lat[lat_idx - lat_dist:lat_idx + lat_dist + 1]
+		latlist = np.flip(self.lat[lat_idx - lat_dist:lat_idx + lat_dist + 1], 0)
 		lonlist = self.lon[lon_idx - lon_dist:lon_idx + lon_dist + 1]
-		return GridHolder(latlist, lonlist, result)
+		return GridHolder(latlist, lonlist, np.flip(result, 0).data)
 
 class EtopoGrabber(Grabber):
 	def __init__(self):
@@ -38,7 +38,7 @@ class EtopoGrabber(Grabber):
 		nc_fid_coord = Dataset(get_base_folder()+'/Raw/ETopo1/ETOPO1_Bed_g_gmt4.grd')
 		self.lon = nc_fid_coord['x'][:-1].data
 		self.lat = nc_fid_coord['y'][:-1].data
-		self.z = nc_fid_z_data['z'][:].reshape(len(self.lat),len(self.lon)).data
+		self.z = nc_fid_z_data['z'][:].reshape(len(self.lat),len(self.lon))
 		self.granularity = 0.01666666666666
 		self.offset = 0
 
@@ -61,6 +61,6 @@ class AvisoGrabber(Grabber):
 		nc_ssh = Dataset(get_base_folder() + f'/Raw/Aviso/{year}/{month}.nc')
 		self.lat = nc_ssh['latitude'][:].data
 		self.lon = nc_ssh['longitude'][:].data
-		self.z = np.flip(nc_ssh['sla'][day-1].data, axis=0)
+		self.z = nc_ssh['sla'][day-1]
 		self.granularity = 0.25
 		self.offset = 0.125
