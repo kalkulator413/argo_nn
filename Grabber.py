@@ -14,30 +14,6 @@ class Grabber():
 	lat =  None
 	lon = None
 
-	def get_grid(self, lat:float, lon:float, radius:float):
-
-		### exclude edge cases near +- 90, +- 180
-		assert lat - radius > -90 and lat + radius < 90, 'latitude out of bounds'
-		assert lon - radius > -180 and lon + radius < 180, 'longtitude out of bounds'
-
-		dist = round(radius / self.granularity)
-		lat_idx = round((lat + 90 - self.offset) / self.granularity)
-		lon_idx = round((lon + 180 - self.offset) / self.granularity)
-		
-		result = np.zeros( (dist * 2 + 1) * (dist * 2 + 1))
-		ctr = 0
-		for lt in range(lat_idx - dist, lat_idx + dist + 1):
-			for ln in range(lon_idx - dist, lon_idx + dist + 1):
-				result[ctr] = self.z[lt][ln]
-				### exclude coastal areas (Aviso)
-				assert not isnan(result[ctr]), 'tried to grab ssh over land'
-
-				ctr += 1
-		
-		latlist = self.lat[lat_idx - dist:lat_idx + dist + 1]
-		lonlist = self.lon[lon_idx - dist:lon_idx + dist + 1]
-		return GridHolder(latlist, lonlist, result.reshape((dist * 2 + 1, dist * 2 + 1)))
-
 	def get_rect(self, lat, lon, lat_radius, lon_radius):
 		### exclude edge cases near +- 90, +- 180
 		assert lat - lat_radius > -90 and lat + lat_radius < 90, 'latitude out of bounds'
