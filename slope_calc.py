@@ -20,7 +20,7 @@ class SlopeCalcDepth(EtopoGrabber):
 			xdist = 2
 		if ydist >2:
 			ydist = 2
-		return self.get_rect(point.latitude, point.longitude, lat_radius=ydist, lon_radius=xdist)
+		return self.get_rect(lat=point.latitude, lon=point.longitude, lat_radius=ydist, lon_radius=xdist)
 	
 class SlopeCalcSSH(AvisoGrabber):
 	def __init__(self, *args, **kwargs):
