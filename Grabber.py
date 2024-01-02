@@ -3,7 +3,17 @@ from netCDF4 import Dataset
 import numpy as np
 from math import isnan
 
+class GridHolder():
+	def __init__(self, latlist, lonlist, grid):
+		self.latlist = latlist
+		self.lonlist = lonlist
+		self.grid = grid
+
 class Grabber():
+
+	lat =  None
+	lon = None
+
 	def get_grid(self, lat:float, lon:float, radius:float):
 
 		### exclude edge cases near +- 90, +- 180
@@ -24,7 +34,9 @@ class Grabber():
 
 				ctr += 1
 		
-		return result.reshape((dist * 2 + 1, dist * 2 + 1))
+		latlist = self.lat[lat_idx - dist:lat_idx + dist + 1]
+		lonlist = self.lon[lon_idx - dist:lon_idx + dist + 1]
+		return GridHolder(latlist, lonlist, result.reshape((dist * 2 + 1, dist * 2 + 1)))
 
 	def get_rect(self, lat, lon, lat_radius, lon_radius):
 		### exclude edge cases near +- 90, +- 180
@@ -46,7 +58,9 @@ class Grabber():
 
 				ctr += 1
 		
-		return result.reshape((lat_dist * 2 + 1, lon_dist * 2 + 1))
+		latlist = self.lat[lat_idx - lat_dist:lat_idx + lat_dist + 1]
+		lonlist = self.lon[lon_idx - lon_dist:lon_idx + lon_dist + 1]
+		return GridHolder(latlist, lonlist, result.reshape((lat_dist * 2 + 1, lon_dist * 2 + 1)))
 
 class EtopoGrabber(Grabber):
 	def __init__(self):
