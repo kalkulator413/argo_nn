@@ -8,14 +8,14 @@ from argo_nn.Grabber import *
 
 # TODO: scale coviariance matrices by Rossby deformation radius
 
-def get_opt_params(subsample_depth, name):
+def get_opt_params(subsample_depth, rossby, name):
 
-	rossby_xdist, rossby_ydist = Rossby.return_rossby_def(np.geopy.Point(np.mean(subsample_depth.latlist),np.mean(subsample_depth.lonlist)))	
+	rossby_xdist, rossby_ydist = rossby.return_rossby_def(geopy.Point(np.mean(subsample_depth.latlist),np.mean(subsample_depth.lonlist)))	
 	x,y = np.meshgrid(subsample_depth.lonlist-np.mean(subsample_depth.lonlist),subsample_depth.latlist-np.mean(subsample_depth.latlist))
 	z = subsample_depth.grid[len(subsample_depth.latlist) // 2][len(subsample_depth.lonlist) // 2]
 	H = np.array(list(zip(x.ravel(),y.ravel())))		
 	R_inv = np.diag(np.exp(-((x.ravel()/rossby_xdist)**2+(y.ravel()/rossby_ydist)**2))) # R sets the observational noise
-	P_inv = np.diag([1/5]**2) # ratio of P to R is noise to signal
+	P_inv = np.diag([1/5])**2 # ratio of P to R is noise to signal
 	denom = np.linalg.inv(H.T.dot(R_inv.dot(H))+P_inv)
 	gain = denom.dot(H.T.dot(R_inv))
 	a = gain.dot(subsample_depth.grid.ravel()-z)
@@ -35,13 +35,17 @@ if __name__ == '__main__':
 
 	point = geopy.Point(29,142)
 	subsample_depth = rossby.rossby_def_extent(point, world_depth) #radius of this should scale with rossby deformation radius
-	get_opt_params(subsample_depth, '1.png')
+	get_opt_params(subsample_depth, rossby, '1.png')
 
 	point = geopy.Point(31,159)
 	subsample_depth = rossby.rossby_def_extent(point, world_depth) #radius of this should scale with rossby deformation radius
-	get_opt_params(subsample_depth, '2.png')
+	get_opt_params(subsample_depth, rossby, '2.png')
 
 	point = geopy.Point(52,-163)
 	subsample_depth = rossby.rossby_def_extent(point, world_depth) #radius of this should scale with rossby deformation radius
-	get_opt_params(subsample_depth, '3.png')
+	get_opt_params(subsample_depth, rossby, '3.png')
+
+	point = geopy.Point(25.431519, -89.523394)
+	subsample_depth = rossby.rossby_def_extent(point, world_depth) #radius of this should scale with rossby deformation radius
+	get_opt_params(subsample_depth, rossby, '4.png')
 

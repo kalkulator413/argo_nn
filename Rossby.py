@@ -32,8 +32,8 @@ class RossbyBase(object):
 		closest_lat = self.lats.find_nearest(point.latitude)
 		closest_lon = self.lons.find_nearest(point.longitude)
 		km_dist = self.rossby_dict[(closest_lat,closest_lon)] # rossby dict return in km
-		ydist = dist/degree_dist # convert to latitude degree distance
-		xdist = dist/(degree_dist*np.cos(np.deg2rad(point.latitude))) # convert to longitude degree distance
+		ydist = km_dist/degree_dist # convert to latitude degree distance
+		xdist = km_dist/(degree_dist*np.cos(np.deg2rad(point.latitude))) # convert to longitude degree distance
 		return (ydist,xdist)	
 
 	def rossby_def_extent(self,point,grabber): #uses baroclinic deformation radius 
