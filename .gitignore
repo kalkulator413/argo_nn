@@ -1,6 +1,6 @@
 __pycache__/
 testing-notebooks/
-EOF.csv
+*.csv
 etopo1.mat
 roughness_calc_2022.m
 roughness/
