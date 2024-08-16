@@ -7,3 +7,4 @@ workflow:
     - Southern pacific data is available [here](https://drive.google.com/file/d/1VlQOzyZ2lFUrUxUxohB1O_GrPJQyX9ZK/view?usp=sharing) and does not have to be generated
     - (Possibly incomplete) Northern pacific data is available [here](https://drive.google.com/file/d/1poGhevvxVS1QyZSODxAN2N1edIF-Ri09/view?usp=sharing)
 - go through the cells of `train.ipynb` to train a model on generated data (connect to a GPU!)
+    - recommend kaggle or google collab
